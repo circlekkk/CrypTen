@@ -25,20 +25,25 @@ import os
 
 from examples.multiprocess_launcher import MultiProcessLauncher
 
-
+# 定义了一个命令行参数解析器，并设置了一些参数的默认值和帮助信息
 parser = argparse.ArgumentParser(description="CrypTen Linear SVM Training")
+# 创建一个argparse.ArgumentParser对象parser，并设置了一个描述信息为"CrypTen Linear SVM Training"。
+# 使用add_argument方法添加了一系列命令行参数。每个参数都有一个名字、类型、默认值、帮助信息等属性。
 parser.add_argument(
     "--world_size",
     type=int,
     default=2,
     help="The number of parties to launch. Each party acts as its own process",
 )
+#--world_size：参与方个数，表示要启动的进程数，每个参与方执行自己的进程。默认为2。
 parser.add_argument(
     "--epochs", default=50, type=int, metavar="N", help="number of total epochs to run"
 )
+# --epochs：表示要运行的总的训练轮数，默认为50。metavar="N"用于指定在帮助信息中显示的参数值的格式
 parser.add_argument(
     "--examples", default=50, type=int, metavar="N", help="number of examples per epoch"
 )
+# --examples：表示每轮训练中的样本数量，默认为50。
 parser.add_argument(
     "--features",
     default=100,
@@ -46,22 +51,25 @@ parser.add_argument(
     metavar="N",
     help="number of features per example",
 )
+# --features：表示每个样本的特征数量，默认为100。
 parser.add_argument(
     "--lr", "--learning-rate", default=0.5, type=float, help="initial learning rate"
 )
+# --lr 或 --learning-rate：表示初始学习率，默认为0.5。
 parser.add_argument(
     "--skip_plaintext",
     default=False,
     action="store_true",
     help="skip evaluation for plaintext svm",
 )
+# skip_plaintext：表示是否跳过明文 SVM 的评估，默认为False。
 parser.add_argument(
     "--multiprocess",
     default=False,
     action="store_true",
     help="Run example in multiprocess mode",
 )
-
+# --multiprocess：表示是否以多进程模式运行，默认为False。
 
 def _run_experiment(args):
     level = logging.INFO
