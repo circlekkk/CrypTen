@@ -72,6 +72,8 @@ parser.add_argument(
 # --multiprocess：表示是否以多进程模式运行，默认为False。
 
 def _run_experiment(args):
+    # 接受一个参数args，该函数内部设置了日志级别，并配置了日志格式。
+    # 然后导入了一个run_mpc_linear_svm函数，并调用该函数进行实验。
     level = logging.INFO
     if "RANK" in os.environ and os.environ["RANK"] != "0":
         level = logging.CRITICAL
@@ -81,14 +83,17 @@ def _run_experiment(args):
         format="%(asctime)s - %(process)d - %(name)s - %(levelname)s - %(message)s",
     )
     from mpc_linear_svm import run_mpc_linear_svm
-
+    print('epochs',args.epochs,'\n')
     run_mpc_linear_svm(
         args.epochs, args.examples, args.features, args.lr, args.skip_plaintext
     )
 
 
 def main(run_experiment):
+    # 接受一个参数run_experiment。该函数首先使用parser.parse_args()解析命令行参数，并将结果赋值给args。
+    # 然后根据args.multiprocess的值，选择以多进程模式运行或直接调用run_experiment函数。
     args = parser.parse_args()
+    print(args.multiprocess, '\n')
     if args.multiprocess:
         launcher = MultiProcessLauncher(args.world_size, run_experiment, args)
         launcher.start()

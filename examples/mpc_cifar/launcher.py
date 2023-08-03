@@ -55,6 +55,7 @@ parser.add_argument(
     metavar="N",
     help="manual epoch number (useful on restarts)",
 )
+# 手动轮次编号（在重新启动时很有用）
 parser.add_argument(
     "-b",
     "--batch-size",
@@ -80,6 +81,7 @@ parser.add_argument(
     metavar="W",
     help="weight decay (default: 1e-4)",
 )
+# 权重衰减
 parser.add_argument(
     "--print-freq",
     "-p",
@@ -101,6 +103,7 @@ parser.add_argument(
     action="store_true",
     help="Resume training from latest checkpoint",
 )
+# 从最近的检查点恢复培训
 parser.add_argument(
     "-e",
     "--evaluate",

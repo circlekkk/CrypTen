@@ -30,6 +30,7 @@ from mpc_imagenet import run_experiment
 
 # input arguments:
 parser = argparse.ArgumentParser(description="Encrypted inference of vision models")
+# 加密推理视觉模型?
 parser.add_argument(
     "--world_size",
     type=int,
@@ -42,24 +43,28 @@ parser.add_argument(
     type=str,
     help="torchvision model to use for inference (default: resnet18)",
 )
+# 计算机视觉模型
 parser.add_argument(
     "--imagenet_folder",
     default=None,
     type=str,
     help="folder containing the ImageNet dataset",
 )
+# 包含ImageNet数据集的文件夹
 parser.add_argument(
     "--tensorboard_folder",
     default="/tmp",
     type=str,
     help="folder in which tensorboard performs logging (default: /tmp)",
 )
+# tensorboard执行日志记录的文件夹（默认值：/tmp）
 parser.add_argument(
     "--num_samples",
     default=None,
     type=int,
     help="number of samples to test on (default: all)",
 )
+# 要测试的样本数（默认值：全部）
 parser.add_argument(
     "--multiprocess",
     default=False,
@@ -79,12 +84,14 @@ def _run_experiment(args):
 
     tensorboard_folder = "/tmp/mpc_imagenet/" + rank
     os.makedirs(tensorboard_folder, exist_ok=True)
+    # tensorboard执行日志记录的文件夹
     run_experiment(
         args.model,
         imagenet_folder=args.imagenet_folder,
         tensorboard_folder=tensorboard_folder,
         num_samples=args.num_samples,
     )
+#     图像数据集文件夹,执行记录文件夹,样本数量.
 
 
 def main():
