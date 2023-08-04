@@ -93,14 +93,17 @@ def run_mpc_cifar(
         )
         with context_manager:
             trainset = datasets.CIFAR10(
-                data_dirname, train=True, download=True, transform=transform
+                data_dirname, train=True, download=False, transform=transform
             )
             testset = datasets.CIFAR10(
-                data_dirname, train=False, download=True, transform=transform
+                data_dirname, train=False, download=False, transform=transform
             )
         trainloader = torch.utils.data.DataLoader(
             trainset, batch_size=4, shuffle=True, num_workers=2
         )#创建训练集数据加载器
+        # 将数据集封装成一个迭代器，以便在训练模型时进行批量的数据读取和处理
+        # batch_size：每个批次的样本数量
+        # num_workers：用于数据加载的子进程数，默认为2。可以加快数据加载的速度，特别是当数据集较大时。
         testloader = torch.utils.data.DataLoader(
             testset, batch_size=batch_size, shuffle=False, num_workers=2
         )
@@ -110,6 +113,7 @@ def run_mpc_cifar(
         context_manager = NoopContextManager()
     # 如果context_manager参数为空，则使用NoopContextManager()作为默认的上下文管理器。他不做任何事情
     data_dir = tempfile.TemporaryDirectory()
+    logging.info('#####data_dir######',data_dir)
     # 创建一个临时目录来存储数据。
     train_loader, val_loader = preprocess_data(context_manager, data_dir.name)
     # 调用preprocess_data函数，加载并预处理数据。
@@ -220,11 +224,14 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq=10):
 def validate_side_by_side(val_loader, plaintext_model, private_model):
     """Validate the plaintext and private models side-by-side on each example"""
     # 在每个样本上同时验证明文模型和私有模型
+    # 对比明文模型和密文模型的前1000条输出,用不到
+    # 验证数据加载器val_loader、明文模型plaintext_model和私有模型private_model作为参数
     # switch to evaluate mode
     plaintext_model.eval()
     private_model.eval()
-
+    # 将明文模型和私有模型切换到评估模式，这意味着模型的参数不会被更新。
     with torch.no_grad():
+        # 用于在验证过程中禁用梯度计算，以减少内存消耗
         for i, (input, target) in enumerate(val_loader):
             # compute output for plaintext
             output_plaintext = plaintext_model(input)
@@ -243,34 +250,53 @@ def validate_side_by_side(val_loader, plaintext_model, private_model):
 
 
 def get_input_size(val_loader, batch_size):
+    # 验证数据加载器val_loader和批次大小batch_size作为参数
     input, target = next(iter(val_loader))
+    # 获取验证数据集中的一个批次，然后返回输入张量的大小
+    logging.info('#####val_loader######',val_loader)
+    logging.info('#####input.size()######', input.size())
     return input.size()
 
 
 def construct_private_model(input_size, model):
     """Encrypt and validate trained model for multi-party setting."""
+    # 接受输入大小input_size和模型model作为参数。该函数用于在多方设置中加密和验证训练好的模型
+    # 模型加密
     # get rank of current process
     rank = comm.get().get_rank()
+    # 获取当前进程的排名
     dummy_input = torch.empty(input_size)
+    # 创建一个空的张量dummy_input，大小与输入大小相同
 
     # party 0 always gets the actual model; remaining parties get dummy model
+    # 在多方设置中，第0方（即排名为0的进程）始终获得实际模型，而其他方则获得一个虚假模型。
+    # 因此，如果当前进程的排名为0，则model_upd等于实际模型；否则，model_upd等于一个新的LeNet模型。
+    # 其他方只能使用加密模型进行计算，但无法获取模型的明文表示
     if rank == 0:
         model_upd = model
     else:
-        model_upd = LeNet()
+        model_upd = LeNet()#必要性?没必要
+    # 这行代码是进程为0的一方负责执行的
+    logging.info('#####rank######', rank)
     private_model = crypten.nn.from_pytorch(model_upd, dummy_input).encrypt(src=0)
+    logging.info('#####private_model######', private_model)
+    # 将model_upd转换为Crypten模型,并使用dummy_input加密,加密的源方为第0方
     return private_model
 
 
 def encrypt_data_tensor_with_src(input):
     """Encrypt data tensor for multi-party setting"""
+    # 在多方计算场景中对数据张量进行加密
     # get rank of current process
     rank = comm.get().get_rank()
     # get world size
     world_size = comm.get().get_world_size()
+    logging.info('#####world_size######', world_size)
+    # 获取当前通信域中的进程数量
 
     if world_size > 1:
         # party 1 gets the actual tensor; remaining parties get dummy tensor
+        # 将标识符src_id设置为1，表示进程1将获得实际的数据张量
         src_id = 1
     else:
         # party 0 gets the actual tensor since world size is 1
@@ -278,9 +304,15 @@ def encrypt_data_tensor_with_src(input):
 
     if rank == src_id:
         input_upd = input
+    #     其他参与方获得输入
     else:
         input_upd = torch.empty(input.size())
+    #
     private_input = crypten.cryptensor(input_upd, src=src_id)
+    logging.info('#####private_input######', private_input)
+    # 将PyTorch张量 input_upd 加密为Crypten张量,其他参与方接收
+    # 如果 world_size=1,进程为0的一方加密
+    #如果 world_size>1,进程为1的一方加密
     return private_input
 
 
@@ -289,7 +321,7 @@ def validate(val_loader, model, criterion, print_freq=10):
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
-
+    # 用于记录批次时间、损失和精度。
     # switch to evaluate mode
     model.eval()
 
@@ -300,6 +332,7 @@ def validate(val_loader, model, criterion, print_freq=10):
                 input
             ):
                 input = encrypt_data_tensor_with_src(input)
+            #     如果模型是crypten.nn.Module的实例，并且输入数据不是加密张量（crypten.is_encrypted_tensor(input)为False），则对输入数据进行加密
             # compute output
             output = model(input)
             if crypten.is_encrypted_tensor(output):
@@ -341,20 +374,36 @@ def validate(val_loader, model, criterion, print_freq=10):
             " * Prec@1 {:.3f} Prec@5 {:.3f}".format(top1.value(), top5.value())
         )
     return top1.value()
-
+# top-1准确度
 
 def save_checkpoint(state, is_best, filename="checkpoint.pth.tar"):
     """Saves checkpoint of plaintext model"""
+    """
+    state example:
+    {
+                "epoch": epoch + 1,
+                "arch": "LeNet",
+                "state_dict": model.state_dict(),
+                "best_prec1": best_prec1,
+                "optimizer": optimizer.state_dict(),
+            },
+    """
     # only save from rank 0 process to avoid race condition
+    # state表示当前的模型状态，is_best表示当前模型是否是最佳模型，filename表示保存检查点文件的路径和名称，默认为"checkpoint.pth.tar"。
     rank = comm.get().get_rank()
     if rank == 0:
         torch.save(state, filename)
+        # 如果排名为0，则表示是主进程，可以保存检查点文件
+        # 将对象state序列化为二进制格式，并将其写入指定的文件
         if is_best:
             shutil.copyfile(filename, "model_best.pth.tar")
+#                             如果is_best为True，则将检查点文件复制为"model_best.pth.tar"，表示这是到目前为止的最佳模型。
 
 
 def adjust_learning_rate(optimizer, epoch, lr=0.01):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+    #在训练过程中调整学习率
+    # optimizer表示优化器对象，epoch表示当前的训练轮数，lr表示初始学习率，默认为0.01
     new_lr = lr * (0.1 ** (epoch // 5))
     for param_group in optimizer.param_groups:
         param_group["lr"] = new_lr
@@ -362,18 +411,26 @@ def adjust_learning_rate(optimizer, epoch, lr=0.01):
 
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
+    # 计算模型在给定输出和目标值下的准确率
+    # output表示模型的输出，target表示目标值，topk表示计算的准确率的前k个值，默认为1。
     with torch.no_grad():
         maxk = max(topk)
         batch_size = target.size(0)
 
         _, pred = output.topk(maxk, 1, True, True)
+        # 使用topk函数，找出输出output中前maxk个最大值的索引，并将索引保存到pred中。注意到_表示丢弃的值，这里没有使用。
         pred = pred.t()
+        # 将pred进行转置，使得它的每一列包含了一个样本的预测结果
         correct = pred.eq(target.view(1, -1).expand_as(pred))
+        # 将目标值target进行扩展，使其大小与pred相同，并与pred进行逐元素比较，得到一个布尔值矩阵correct，表示预测结果是否与目标值相等。
 
         res = []
+        # res，用于保存计算得到的准确率
         for k in topk:
             correct_k = correct[:k].flatten().float().sum(0, keepdim=True)
+            # 取correct的前k行，将其展平为一维向量，并将其转换为浮点型。然后对该向量进行求和操作，并保持维度为1，得到该k值下的正确预测数量。
             res.append(correct_k.mul_(100.0 / batch_size))
+        #     将该k值下的正确预测数量乘以100除以批次大小，得到该k值下的准确率，并将其添加到res列表中
         return res
 
 
@@ -391,6 +448,7 @@ class LeNet(nn.Sequential):
         self.fc1 = nn.Linear(16 * 5 * 5, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 10)
+    #     定义网络的结构
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
@@ -400,3 +458,7 @@ class LeNet(nn.Sequential):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
+if __name__ == "__main__":
+    testmodel=LeNet()
+    print('LeNet() type:',type(testmodel))
+    print('isinstance',isinstance(testmodel, crypten.nn.Module))

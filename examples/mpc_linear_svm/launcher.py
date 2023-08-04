@@ -74,14 +74,14 @@ parser.add_argument(
 def _run_experiment(args):
     # 接受一个参数args，该函数内部设置了日志级别，并配置了日志格式。
     # 然后导入了一个run_mpc_linear_svm函数，并调用该函数进行实验。
-    level = logging.INFO
-    if "RANK" in os.environ and os.environ["RANK"] != "0":
-        level = logging.CRITICAL
-    logging.getLogger().setLevel(level)
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s - %(process)d - %(name)s - %(levelname)s - %(message)s",
-    )
+    # level = logging.INFO
+    # if "RANK" in os.environ and os.environ["RANK"] != "0":
+    #     level = logging.CRITICAL
+    # logging.getLogger().setLevel(level)
+    # logging.basicConfig(
+    #     level=level,
+    #     format="%(asctime)s - %(process)d - %(name)s - %(levelname)s - %(message)s",
+    # )
     from mpc_linear_svm import run_mpc_linear_svm
     print('epochs',args.epochs,'\n')
     run_mpc_linear_svm(

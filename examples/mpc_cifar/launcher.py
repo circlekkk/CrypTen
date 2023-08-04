@@ -46,7 +46,7 @@ parser.add_argument(
     help="The number of parties to launch. Each party acts as its own process",
 )
 parser.add_argument(
-    "--epochs", default=25, type=int, metavar="N", help="number of total epochs to run"
+    "--epochs", default=2, type=int, metavar="N", help="number of total epochs to run"
 )
 parser.add_argument(
     "--start-epoch",
@@ -107,6 +107,7 @@ parser.add_argument(
 parser.add_argument(
     "-e",
     "--evaluate",
+    default=False,####
     dest="evaluate",
     action="store_true",
     help="evaluate model on validation set",
@@ -123,7 +124,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--multiprocess",
-    default=False,
+    default=True,#False,
     action="store_true",
     help="Run example in multiprocess mode",
 )
