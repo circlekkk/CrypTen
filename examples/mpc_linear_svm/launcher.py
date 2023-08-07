@@ -37,7 +37,7 @@ parser.add_argument(
 )
 #--world_size：参与方个数，表示要启动的进程数，每个参与方执行自己的进程。默认为2。
 parser.add_argument(
-    "--epochs", default=50, type=int, metavar="N", help="number of total epochs to run"
+    "--epochs", default=5, type=int, metavar="N", help="number of total epochs to run"
 )
 # --epochs：表示要运行的总的训练轮数，默认为50。metavar="N"用于指定在帮助信息中显示的参数值的格式
 parser.add_argument(
@@ -46,7 +46,7 @@ parser.add_argument(
 # --examples：表示每轮训练中的样本数量，默认为50。
 parser.add_argument(
     "--features",
-    default=100,
+    default=3,
     type=int,
     metavar="N",
     help="number of features per example",
@@ -58,7 +58,7 @@ parser.add_argument(
 # --lr 或 --learning-rate：表示初始学习率，默认为0.5。
 parser.add_argument(
     "--skip_plaintext",
-    default=False,
+    default=True,#False,
     action="store_true",
     help="skip evaluation for plaintext svm",
 )

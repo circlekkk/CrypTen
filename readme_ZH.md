@@ -67,3 +67,7 @@ model.eval()
     2.pytorch模拟多方
     3.模型保存,推理
     4.模型评估指标少
+6.pytorch分布式MPC配置
+DDP
+Use multi-machine DistributedDataParallel and the launching script, if the application needs to scale across machine boundaries.
+python -m torch.distributed.launch --nproc_per_node 4 --nnodes 2 --node_rank 0 master_addr='192.168.112.3' --master_port='29500' examples/mpc_linear_svm/launcher.py
